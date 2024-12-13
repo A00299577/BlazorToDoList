@@ -7,177 +7,108 @@ namespace BlazorToDoList.Tests
     using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
-        using System.Diagnostics;
-        using System.Linq;
+    using System.IO;
+    using System.Linq;
     using Xunit;
 
     public class ToDoListTest
     {
-        private Mock<IFileService> _mockFileService;
         private IToDoService _toDoService;
         private List<ToDoItem> _testData;
 
-
-        //public void ReadJson() {
-        //    var json = File.ReadAllText(@"C:\Users\MuraliGanta\Desktop\code\BlazorToDoList\BlazorToDoList.App.Tests\bin\Debug\net8.0\sample-data\todoitems.json");
-        //    _testData = JsonConvert.DeserializeObject<List<ToDoItem>>(json);
-        //}  
         public ToDoListTest()
         {
-            var serviveProvider = new ServiceCollection()
-                .AddScoped<IToDoService, ToDoService>()
-                .AddScoped<IFileService, FileService>()
-                .BuildServiceProvider();
-                
-            var fileService = serviveProvider.GetService<IFileService>();
+            _toDoService = new ToDoService(new FileService(null));
+            ReadJson();
+        }
 
+        // Read Items from the JSON file
+        public void ReadJson()
+        {
+            var jsonPath = @"C:\Users\MuraliGanta\Desktop\code\BlazorToDoList\sample-data\todoitems.json";
+            if (File.Exists(jsonPath))
+            {
+                var json = File.ReadAllText(jsonPath);
+                _testData = JsonConvert.DeserializeObject<List<ToDoItem>>(json);
+            }
+            else
+            {
+                _testData = new List<ToDoItem>();
+            }
+        }
 
-            _testData = new List<ToDoItem>();
-            _mockFileService = new Mock<IFileService>();
-
-            _mockFileService.Setup(x => x.ReadFromFile()).Returns(JsonConvert.SerializeObject(_testData));
-            _mockFileService.Setup(x => x.SaveToFile(It.IsAny<List<ToDoItem>>())).Callback<List<ToDoItem>>(x => _testData = x);
-            
-            _toDoService = new ToDoService(_mockFileService.Object);
-            
-        }     
-
+        // 1. Create a new item
         [Fact]
         public void CreateItemTest()
         {
-            
-            //Arrange
-             var testDescription = "Test Item";
+            const string testDescription = "Test Item";
 
-            // Act
             var existingItems = _toDoService.Get();
-             var existingItem = existingItems.FirstOrDefault(x => x.Description == testDescription);
-            if (existingItem != null)
+            var itemToDelete = existingItems.FirstOrDefault(item => item.Description == testDescription);
+            if (itemToDelete != null)
             {
-                _toDoService.Delete(existingItem.ID);
+                _toDoService.Delete(itemToDelete.ID);
             }
 
-            var newItem = new ToDoItem
+            _toDoService.Add(new ToDoItem
             {
                 ID = Guid.NewGuid(),
                 Description = testDescription,
                 IsComplete = false,
                 DateCreated = DateTime.Now
-            };
-            _toDoService.Add(newItem);
+            });
 
-            var itemsAfterAdd = _toDoService.Get();
+            var updatedItems = _toDoService.Get();
+            var testItemExists = updatedItems.Any(item => item.Description == testDescription);
 
-            // Assert
-            Assert.Contains(itemsAfterAdd, x => x.Description == testDescription);
+            Assert.True(testItemExists, $"'{testDescription}' was not found in the to-do list after adding it.");
         }
 
-        // [Fact]
-        // public void DeleteItemTest()
-        // {
-        //     // Arrange
-        //     CreateItemTest();
-        //     var testDescription = "Test Item";
-        //     var items = _toDoService.Get();
-        //     var itemToDelete = items.First(x => x.Description == testDescription);
+        // 2. Delete an item from an existing list
+        [Fact]
+        public void DeleteItemTest()
+        {
+            CreateItemTest();
 
-        //     // Act
-        //     _toDoService.Delete(itemToDelete.ID);
-        //     var itemsAfterDelete = _toDoService.Get();
+            const string testDescription = "Test Item";
+            var items = _toDoService.Get();
+            var item = items.FirstOrDefault(i => i.Description == testDescription);
 
-        //     // Assert
-        //     Assert.DoesNotContain(itemsAfterDelete, x => x.Description == testDescription);
-        // }
+            Assert.NotNull(item);
 
-        // [Fact]
-        // public void ToggleTest()
-        // {
-        //     // Arrange
-        //     CreateItemTest();
-        //     var testDescription = "Test Item";
-        //     var items = _toDoService.Get();
-        //     var itemToToggle = items.First(x => x.Description == testDescription);
+            _toDoService.Delete(item.ID);
 
-        //     // Act
-        //     Assert.False(itemToToggle.IsComplete, "Item should not be checked initially.");
+            items = _toDoService.Get();
+            var itemExistsAfterDeletion = items.Any(i => i.Description == testDescription);
 
-        //     _toDoService.Toggle(itemToToggle.ID);
-        //     var itemsAfterToggle = _toDoService.Get();
-        //     var toggledItem = itemsAfterToggle.First(x => x.Description == testDescription);
+            Assert.False(itemExistsAfterDeletion, $"'{testDescription}' was not deleted from the to-do list.");
+        }
 
-        //     Assert.True(toggledItem.IsComplete, "Item should be checked after toggling.");
+        // 3. Toggle an item from an existing list
+        [Fact]
+        public void ToggleTest()
+        {
+            CreateItemTest();
 
-        //     // Cleanup
-        //     DeleteItemTest();
-        // }
+            const string testDescription = "Test Item";
+            var items = _toDoService.Get();
+            var item = items.FirstOrDefault(i => i.Description == testDescription);
 
-        // [Fact]
-        // public void UnToggleTest()
-        // {
-        //     // Arrange
-        //     CreateItemTest();
-        //     var testDescription = "Test Item";
-        //     var items = _toDoService.Get();
-        //     var itemToUnToggle = items.First(x => x.Description == testDescription);
+            Assert.NotNull(item);
+            Assert.False(item.IsComplete, "The item should not be completed initially.");
 
-        //     // Act
-        //     Assert.False(itemToUnToggle.IsComplete, "Item should not be checked initially.");
+            _toDoService.Toggle(item.ID);
 
-        //     _toDoService.Toggle(itemToUnToggle.ID);
-        //     var itemsAfterFirstToggle = _toDoService.Get();
-        //     var toggledItem = itemsAfterFirstToggle.First(x => x.Description == testDescription);
+            items = _toDoService.Get();
+            item = items.FirstOrDefault(i => i.Description == testDescription);
 
-        //     Assert.True(toggledItem.IsComplete, "Item should be checked after first toggling.");
+            Assert.NotNull(item);
+            Assert.True(item.IsComplete, "The item should be completed after toggling.");
 
-        //     _toDoService.Toggle(itemToUnToggle.ID);
-        //     var itemsAfterSecondToggle = _toDoService.Get();
-        //     var unToggledItem = itemsAfterSecondToggle.First(x => x.Description == testDescription);
+            DeleteItemTest();
+        }
 
-        //     // Assert
-        //     Assert.False(unToggledItem.IsComplete, "Item should not be checked after second toggling.");
+  
 
-        //     // Cleanup
-        //     DeleteItemTest();
-        // }
-
-        // [Fact]
-        // public void GetItemByIdTest()
-        // {
-        //     // Arrange
-        //     CreateItemTest();
-        //     var testDescription = "Test Item";
-        //     var items = _toDoService.Get();
-        //     var expectedItem = items.First(x => x.Description == testDescription);
-
-        //     // Act
-        //     var result = _toDoService.Get(expectedItem.ID);
-
-        //     // Assert
-        //     Assert.NotNull(result);
-        //     Assert.Equal(expectedItem.ID, result.ID);
-        //     Assert.Equal(expectedItem.Description, result.Description);
-        // }
-
-        // [Fact]
-        // public void VerifyItemExistsTest()
-        // {
-        //     // Arrange
-        //     var newItem = new ToDoItem
-        //     {
-        //         ID = Guid.NewGuid(),
-        //         Description = "Test Item",
-        //         IsComplete = false,
-        //         DateCreated = DateTime.Now
-        //     };
-        //     _toDoService.Add(newItem);
-
-        //     // Act
-        //     var allItems = _toDoService.Get();
-        //     var itemExists = allItems.Any(x => x.ID == newItem.ID);
-
-        //     // Assert
-        //     Assert.True(itemExists, "The item should exist in the list.");
-        // }
-        
     }
 }

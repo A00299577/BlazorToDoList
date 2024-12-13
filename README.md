@@ -5,6 +5,12 @@ This example project creates a [Blazor](https://dotnet.microsoft.com/apps/aspnet
 
 ### [Using Blazor to Build a Client-Side Single-Page App with .NET Core](https://exceptionnotfound.net/using-blazor-to-build-a-client-side-single-page-app-with-net-core/)
 
+### Devops URL
+https://dev.azure.com/A00299577/MicrosoftTodoAutomatedTests/_workitems/recentlyupdated/
+
+### SlackWorkspace URL
+https://app.slack.com/client/T083YSD0M6C/C083A8H74PL
+
 ### Testing Types and Methods
 #### Types
  - Unit Testing

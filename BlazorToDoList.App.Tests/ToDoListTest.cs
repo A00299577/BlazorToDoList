@@ -108,7 +108,71 @@ namespace BlazorToDoList.Tests
             DeleteItemTest();
         }
 
-  
+        // 4. Delete an item from an existing list
+        [Fact]
+        public void UnToggleTest()
+        {
+            CreateItemTest();
+
+            const string testDescription = "Test Item";
+            var items = _toDoService.Get();
+            var item = items.FirstOrDefault(i => i.Description == testDescription);
+
+            Assert.NotNull(item);
+            Assert.False(item.IsComplete, "The item should not be completed initially.");
+
+            _toDoService.Toggle(item.ID);
+
+            items = _toDoService.Get();
+            item = items.FirstOrDefault(i => i.Description == testDescription);
+
+            Assert.NotNull(item);
+            Assert.True(item.IsComplete, "The item should be completed after toggling.");
+
+            _toDoService.Toggle(item.ID);
+
+            items = _toDoService.Get();
+            item = items.FirstOrDefault(i => i.Description == testDescription);
+
+            Assert.NotNull(item);
+            Assert.False(item.IsComplete, "The item should not be completed after untoggling.");
+
+            DeleteItemTest();
+        }
+
+        // 5. Get By Item ID
+        [Fact]
+        public void GetByIdTest()
+        {
+            CreateItemTest();
+
+            const string testDescription = "Test Item";
+            var items = _toDoService.Get();
+            var expectedItem = items.FirstOrDefault(item => item.Description == testDescription);
+
+            Assert.NotNull(expectedItem);
+
+            var retrievedItem = _toDoService.Get(expectedItem.ID);
+
+            Assert.NotNull(retrievedItem);
+            Assert.Equal(expectedItem.ID, retrievedItem.ID);
+            Assert.Equal(expectedItem.Description, retrievedItem.Description);
+            Assert.Equal(expectedItem.IsComplete, retrievedItem.IsComplete);
+        }
+
+        // 6. Empty ToDo List
+        [Fact]
+        public void EmptyToDoList()
+        {
+            var items = _toDoService.Get().ToList();
+            foreach (var item in items)
+            {
+                _toDoService.Delete(item.ID);
+            }
+
+            var updatedItems = _toDoService.Get();
+            Assert.Empty(updatedItems);
+        }
 
     }
 }

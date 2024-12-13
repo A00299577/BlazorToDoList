@@ -46,6 +46,43 @@ public class ToDoListAutomatedTests
         Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("Test Todo Item 1", inputField.GetAttribute("value"));
     }
 
+    [Test, Order(3)]
+    public void CreateToDoItemTest()
+    {
+        _driver.Navigate().GoToUrl("http://localhost:14475/todo");
+        _driver.Manage().Window.Maximize();
+        Thread.Sleep(2000);
+
+        // Find the input field and provide input
+        var inputField = _driver.FindElement(By.TagName("input"));
+        Thread.Sleep(2000);
+
+        inputField.SendKeys("Test Todo Item 2");
+        Thread.Sleep(3000);
+
+        // Find and click the "Create" button
+        var createButton = _driver.FindElement(By.XPath("//button[contains(text(), 'Create')]"));
+        createButton.Click();
+        Thread.Sleep(2000);
+
+        // Verify the new Todo item appears by value in the tag
+        var tdElement = _driver.FindElement(By.XPath("//td[text()='Test Todo Item 2']"));
+        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("Test Todo Item 2", tdElement.Text);
+    }
+
+    [Test, Order(4)]
+    public void DeleteToDoItemTest()
+    {
+        _driver.Navigate().GoToUrl("http://localhost:14475/todo");
+        _driver.Manage().Window.Maximize();
+        Thread.Sleep(2000);
+
+        // Find and click the "Delete" button for the created item
+        var deleteButton = _driver.FindElement(By.XPath("//i[contains(@class, 'oi-trash')]"));
+        deleteButton.Click();
+        Thread.Sleep(2000);
+    }
+
     [TearDown]
     public void TearDown()
     {
